@@ -18,13 +18,13 @@ FROM table_reference
 
 #### 2. Order By 和 Sort By
 
-	**ORDER BY**用于==*全局排序*==，就是对指定的所有排序键进行全局排序，使用ORDER BY的查询语句，最后会用一个Reduce Task来完成全局排序。 **SORT BY**用于*==分区内排序==*，即每个Reduce任务内排序。
+	ORDER BY用于全局排序，就是对指定的所有排序键进行全局排序，使用ORDER BY的查询语句，最后会用一个Reduce Task来完成全局排序。 SORT BY用于分区内排序，即每个Reduce任务内排序。
 
 #### 3. Distrubute By 和 Culster By
 
-	**distribute by**：按照指定的字段或表达式对数据进行划分，输出到对应的Reduce或者文件中。 
+	distribute by：按照指定的字段或表达式对数据进行划分，输出到对应的Reduce或者文件中。 
 	
-	**cluster by**：除了兼具distribute by的功能，还兼具sort by的排序功能。 
+	cluster by：除了兼具distribute by的功能，还兼具sort by的排序功能。 
 
 #### 4. 子查询
 
