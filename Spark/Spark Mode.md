@@ -1,14 +1,14 @@
-#####Spark运行job有2种模式：
+##### Spark运行job有2种模式：
 
-###*`cluster mode `*
+### *`cluster mode `*
 
 > 	Spark driver在 application的master process中运行。如果和YARN集成，则application master process由YARN管理，在YARN中运行。
 
-###*`client mode`*
+### *`client mode`*
 
 > 	Spark driver在clinet process中运行。如果集成YARN，application master只负责从YARN请求资源。
 
-###*`Standalone模式下存在的角色`*
+### *`Standalone模式下存在的角色`*
 
 > 1. `Client`：客户端进程，负责提交作业到Master。
 > 2. `Master`：Standalone模式中主控节点，负责接收Client提交的作业，管理Worker，并命令Worker启动Driver和Executor。
@@ -16,20 +16,20 @@
 > 4. `Drive`： 一个Spark作业运行时包括一个Driver进程，也是作业的主进程，负责作业的解析、生成Stage并调度Task到Executor上。包括DAGScheduler，TaskScheduler。
 > 5. `Executor`：即真正执行作业的地方，一个集群一般包含多个Executor，每个Executor接收Driver的命令Launch Task，一个Executor可以执行一到多个Task。
 
-###*`作业相关的名词解释`*
+### *`作业相关的名词解释`*
 
 > 1. `Stage`：一个Spark作业一般包含一到多个Stage。
 > 2. `Task`：一个Stage包含一到多个Task，通过多个Task实现并行运行的功能。
 > 3. `DAGScheduler`： 实现将Spark作业分解成一到多个Stage，每个Stage根据RDD的Partition个数决定Task的个数，然后生成相应的Task set放到TaskScheduler中。
 > 4. `TaskScheduler`：实现Task分配到Executor上执行。
 
-##*Cluster mode*
+## *Cluster mode*
 
 ##### 1. cluster mode without yarn
 
 > 客户端提交作业给Master
 >
-> ![](/Users/wsh/Desktop/note/img/cluster_1.jpg)
+> ![](/Users/wsh/Documents/Notes/img/cluster_1.jpg)
 >
 > 1. Master让一个Worker启动Driver（上图中间的worker），即SchedulerBackend。 Worker创建一个DriverRunner线程，DriverRunner启动SchedulerBackend进程。
 > 2. Master让其余Worker启动Exeuctor，即ExecutorBackend。Worker创建一个ExecutorRunner线程，ExecutorRunner会启动ExecutorBackend进程。 ExecutorBackend启动后会向Driver的SchedulerBackend注册。
@@ -85,7 +85,7 @@
 >   c). SPARK_YARN_USER_ENV传递给spark进程的环境变量
 >   d). 传递给app的参数应该通过–args指定。
 
-#####3. 使用Yarn与不使用Yarn的区别
+##### 3. 使用Yarn与不使用Yarn的区别
 
 > 用YARN之后的主要区别就是:
 >
