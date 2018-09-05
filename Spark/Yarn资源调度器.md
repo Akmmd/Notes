@@ -1,6 +1,6 @@
-#####		YARN调度器有多种实现，自带的调度器为`Capacity Scheduler`和`Fair Scheduler`。YARN资源调度器均实现`Resource Scheduler`接口，是一个插拔式组件，用户可以通过配置参数来使用不同的调度器，也可以自己按照接口规范编写新的资源调度器。默认情况下，YARN采用的是`Capacity Scheduler`调度器。
+##### YARN调度器有多种实现，自带的调度器为`Capacity Scheduler`和`Fair Scheduler`。YARN资源调度器均实现`Resource Scheduler`接口，是一个插拔式组件，用户可以通过配置参数来使用不同的调度器，也可以自己按照接口规范编写新的资源调度器。默认情况下，YARN采用的是`Capacity Scheduler`调度器。
 
-###`Capacity Scheduler`
+### `Capacity Scheduler`
 
 > 		Capacity Scheduler（计算能力调度器）是由Yahoo贡献的，主要是解决HADOOP-3421中提出的，在调度器上完成HOD（Hadoop On Demand）功能，克服已有HOD的性能低效的缺点。它适合于多用户共享集群的环境的调度器。在多用户的情况下，达到最大化集群的吞吐和利用率的目的。
 >
@@ -10,7 +10,7 @@
 >
 > 	在正常的操作中，Capacity调度器不会强制释放Container，当一个队列资源不够用时，这个队列只能获得其它队列释放后的Container资源。当然，我们可以为队列设置一个最大资源使用量，以免这个队列过多的占用空闲资源，导致其它队列无法使用这些空闲资源，这就是弹性队列需要权衡的地方。
 
-###` Characteristics`
+### `Characteristics`
 
 - **容量保证**：每个队列都分配了一部分容量，他们可以支配着部分资源。提交到特定队列的应用程序，可以使用该队列的资源。管理员可以配置每个队列容量的最低保证和资源使用上限。
 - **安全性**：每个队列都有严格的ACL（控制访问列表），它可以控制用户提交应用程序到特定队列上。同时保证用户不能查看或修改其它用户提交的应用程序，并且队列管理员和集群系统管理员可以对其进行维护。
