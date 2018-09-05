@@ -342,12 +342,11 @@ scala> aa. map {
 # res16: List[Int] = List(2, 3, 4, 3)
 ```
 
-###reduceByKey与groupByKey的区别？
+### reduceByKey与groupByKey的区别？
 
 1. 当采用reduceByKeyt时，Spark可以在每个分区移动数据之前将待输出数据与一个共用的key结合。借助下图可以理解在reduceByKey里究竟发生了什么。 注意在数据对被搬移前同一机器上同样的key是怎样被组合的(reduceByKey中的lamdba函数)。然后lamdba函数在每个区上被再次调用来将所有值reduce成一个最终结果。
 2. 当采用groupByKey时，由于它不接收函数，spark只能先将所有的键值对(key-value pair)都移动，这样的后果是集群节点之间的开销很大，导致传输延时。
-
-	因此，在对大数据进行复杂计算时，reduceByKey优于groupByKey。
-	另外，如果仅仅是group处理，那么以下函数应该优先于 groupByKey ：
- 　　（1）combineByKey 组合数据，但是组合之后的数据类型与输入时值的类型不一样。
- 　　（2）foldByKey合并每一个 key 的所有值，在级联函数和“零值”中使用。
+>	因此，在对大数据进行复杂计算时，reduceByKey优于groupByKey。
+>	另外，如果仅仅是group处理，那么以下函数应该优先于 groupByKey ：
+>	（1）combineByKey 组合数据，但是组合之后的数据类型与输入时值的类型不一样。
+>	（2）foldByKey合并每一个 key 的所有值，在级联函数和“零值”中使用。
