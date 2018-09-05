@@ -29,7 +29,7 @@
 
 > 客户端提交作业给Master
 >
-> ![](/Users/wsh/Documents/Notes/img/cluster_1.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/cluster_1.jpg)
 >
 > 1. Master让一个Worker启动Driver（上图中间的worker），即SchedulerBackend。 Worker创建一个DriverRunner线程，DriverRunner启动SchedulerBackend进程。
 > 2. Master让其余Worker启动Exeuctor，即ExecutorBackend。Worker创建一个ExecutorRunner线程，ExecutorRunner会启动ExecutorBackend进程。 ExecutorBackend启动后会向Driver的SchedulerBackend注册。
