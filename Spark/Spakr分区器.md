@@ -1,1 +1,0 @@
-HashPartitioner && RangePartitioner
