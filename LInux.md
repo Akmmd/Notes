@@ -1,4 +1,4 @@
-###awk
+### awk
 
 ​	awk是一个强大的文本分析工具，相对于grep的查找，sed的编辑，awk在其对数据分析并生成报告时，显得尤为强大。简单来说awk就是把文件逐行的读入，以空格为默认分隔符将每行切片，切开的部分再进行各种分析处理。
 
@@ -14,7 +14,7 @@ awk '{pattern + action}' {filenames}
 >
 > ​	通常，awk是以文件的一行为处理单位的。awk每接收文件的一行，然后执行相应的命令，来处理文本。
 
-####调用AWK
+#### 调用AWK
 
 ```shell
 1.命令行方式
@@ -32,7 +32,7 @@ awk -f awk-script-file input-file(s)
 其中，-f选项加载awk-script-file中的awk脚本，input-file(s)跟上面的是一样的。
 ```
 
-###grep：使用正则表示式进行全局查找并打印。
+### grep：使用正则表示式进行全局查找并打印。
 
 ```shell
 $ grep [-acinv] [--color=auto] 搜寻字符串 filename
@@ -45,11 +45,11 @@ $ grep [-acinv] [--color=auto] 搜寻字符串 filename
 $ grep -n 'the' regular_express.txt
 ```
 
-###ps：查看某个时间点的进程；ps -aux：查看系统所有进程；
+### ps：查看某个时间点的进程；ps -aux：查看系统所有进程；
 
-###top：实时显示进程信息；top -d  2：每个2秒刷新一次
+### top：实时显示进程信息；top -d  2：每个2秒刷新一次
 
-###netstat：查看占用端口的进程
+### netstat：查看占用端口的进程
 
 ```shell
 示例：查看特定端口的进程
