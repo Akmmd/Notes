@@ -351,7 +351,7 @@ scala> aa. map {
   &ensp;（1）combineByKey 组合数据，但是组合之后的数据类型与输入时值的类型不一样。\
   &ensp;（2）foldByKey合并每一个 key 的所有值，在级联函数和“零值”中使用。
 =======
->	因此，在对大数据进行复杂计算时，reduceByKey优于groupByKey。
->	另外，如果仅仅是group处理，那么以下函数应该优先于 groupByKey ：
+>	因此，在对大数据进行复杂计算时，reduceByKey优于groupByKey。\
+>	另外，如果仅仅是group处理，那么以下函数应该优先于 groupByKey ：\
 >	（1）combineByKey 组合数据，但是组合之后的数据类型与输入时值的类型不一样。\
 >	（2）foldByKey合并每一个 key 的所有值，在级联函数和“零值”中使用。
