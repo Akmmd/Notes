@@ -22,7 +22,7 @@
 
 **`指父RDD的每个分区只被一个子RDD分区使用，子RDD分区通常只对应常数个父RDD分区`。**
 
-> ![3958688-04c7a31cd515ed86](/Users/wsh/Desktop/note/img/zhai.png)
+> ![3958688-04c7a31cd515ed86](https://github.com/Akmmd/Notes/raw/master/img/zhai.png)
 
 `窄依赖的函数有：`
 
