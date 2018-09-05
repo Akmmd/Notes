@@ -1,10 +1,10 @@
-#####			Shuffle的中文解释为“洗牌操作”，可以理解成将集群中所有节点上的数据进行重新整合分类的过程。其思想来源于hadoop的mapReduce,Shuffle是连接map阶段和reduce阶段的桥梁。由于分布式计算中，每个阶段的各个计算节点只处理任务的一部分数据，若下一个阶段需要依赖前面阶段的所有计算结果时，则需要对前面阶段的所有计算结果进行重新整合和分类，这就需要经历shuffle过程。 
+##### Shuffle的中文解释为“洗牌操作”，可以理解成将集群中所有节点上的数据进行重新整合分类的过程。其思想来源于hadoop的mapReduce,Shuffle是连接map阶段和reduce阶段的桥梁。由于分布式计算中，每个阶段的各个计算节点只处理任务的一部分数据，若下一个阶段需要依赖前面阶段的所有计算结果时，则需要对前面阶段的所有计算结果进行重新整合和分类，这就需要经历shuffle过程。 
 
-#####			`与MapReduce计算框架一样，Spark的Shuffle实现大致如下图所示，在DAG阶段以shuffle为界，划分stage，上游stage做map task，每个map task将计算结果数据分成多份，每一份对应到下游stage的每个partition中，并将其临时写到磁盘，该过程叫做shuffle write；下游stage做reduce task，每个reduce task通过网络拉取上游stage中所有map task的指定分区结果数据，该过程叫做shuffle read，最后完成reduce的业务逻辑`。
+##### `与MapReduce计算框架一样，Spark的Shuffle实现大致如下图所示，在DAG阶段以shuffle为界，划分stage，上游stage做map task，每个map task将计算结果数据分成多份，每一份对应到下游stage的每个partition中，并将其临时写到磁盘，该过程叫做shuffle write；下游stage做reduce task，每个reduce task通过网络拉取上游stage中所有map task的指定分区结果数据，该过程叫做shuffle read，最后完成reduce的业务逻辑`。
 
-> ![](/Users/wsh/Desktop/note/img/spark-shuffle-overview.png)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/spark-shuffle-overview.png)
 
-#####		`在spark中，RDD之间的关系包含窄依赖和宽依赖，其中宽依赖涉及shuffle操作。因此在spark程序的每个job中，都是根据是否有shuffle操作进行阶段（stage）划分，每个stage都是一系列的RDD map操作。`
+##### `在spark中，RDD之间的关系包含窄依赖和宽依赖，其中宽依赖涉及shuffle操作。因此在spark程序的每个job中，都是根据是否有shuffle操作进行阶段（stage）划分，每个stage都是一系列的RDD map操作。`
 
 **宽依赖（`涉及Shuffle操作`）：**
 
@@ -12,7 +12,7 @@
 
 **`指父RDD的每个分区都有可能被多个子RDD分区使用，子RDD分区`==通常对应父RDD所有分区==。**
 
-> ![](/Users/wsh/Desktop/note/img/kuan.png)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/kuan.png)
 
 `宽依赖的函数有：`
 
@@ -26,25 +26,25 @@
 
 `窄依赖的函数有：`
 
- 	#####		`map, filter, union, join(父RDD是hash-partitioned ), mapPartitions, mapValues`
+#### `map, filter, union, join(父RDD是hash-partitioned ), mapPartitions, mapValues`
 
 ##### `比较`
 
-> 		**`宽依赖往往对应着shuffle操作，需要在运行的过程中将同一个RDD分区传入到不同的RDD分区中，中间可能涉及到多个节点之间数据的传输，而窄依赖的每个父RDD分区通常只会传入到另一个子RDD分区，通常在一个节点内完成；`**
+> 	**`宽依赖往往对应着shuffle操作，需要在运行的过程中将同一个RDD分区传入到不同的RDD分区中，中间可能涉及到多个节点之间数据的传输，而窄依赖的每个父RDD分区通常只会传入到另一个子RDD分区，通常在一个节点内完成；`**
 >
-> 		**`当RDD分区丢失时，对于窄依赖来说，由于父RDD的一个分区只对应一个子RDD分区，这样只需要重新计算与子RDD分区对应的父RDD分区就行。这个计算对数据的利用是100%的；`**
+> 	**`当RDD分区丢失时，对于窄依赖来说，由于父RDD的一个分区只对应一个子RDD分区，这样只需要重新计算与子RDD分区对应的父RDD分区就行。这个计算对数据的利用是100%的；`**
 >
-> 		**`当RDD分区丢失时，对于宽依赖来说，重算的父RDD分区只有一部分数据是对应丢失的子RDD分区的，另一部分就造成了多余的计算。宽依赖中的子RDD分区通常来自多个父RDD分区，极端情况下，所有父RDD都有可能重新计算。`**
+> 	**`当RDD分区丢失时，对于宽依赖来说，重算的父RDD分区只有一部分数据是对应丢失的子RDD分区的，另一部分就造成了多余的计算。宽依赖中的子RDD分区通常来自多个父RDD分区，极端情况下，所有父RDD都有可能重新计算。`**
 
-#*Spark ShuffleManager*
+# *Spark ShuffleManager*
 
 ------
 
-#####		`Spark程序中的Shuffle操作是通过shuffleManage对象进行管理。Spark目前支持的ShuffleMange模式主要有两种：HashShuffleMagnage 和 SortShuffleManage `。
+##### `Spark程序中的Shuffle操作是通过shuffleManage对象进行管理。Spark目前支持的ShuffleMange模式主要有两种：HashShuffleMagnage 和 SortShuffleManage `。
 
-#####		`Shuffle操作包含当前阶段的Shuffle Write（存盘）和下一阶段的Shuffle Read（fetch）,两种模式的主要差异是在Shuffle Write阶段`
+##### `Shuffle操作包含当前阶段的Shuffle Write（存盘）和下一阶段的Shuffle Read（fetch）,两种模式的主要差异是在Shuffle Write阶段`
 
-##*HashShuffleMagnage*
+## *HashShuffleMagnage*
 
 ------
 
@@ -60,7 +60,7 @@ HashShuffleMagnage是Spark1.2之前版本的默认模式，在集群中的每个
 >
 > 　　shuffle read的拉取过程是一边拉取一边进行聚合的。每个shuffle read task都会有一个自己的buffer缓冲，每次都只能拉取与buffer缓冲相同大小的数据，然后通过内存中的一个Map进行聚合等操作。聚合完一批数据后，再拉取下一批数据，并放到buffer缓冲中进行聚合操作。以此类推，直到最后将所有数据到拉取完，并得到最终的结果。
 >
-> ![](/Users/wsh/Desktop/note/img/hashshuffle.jpeg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/hashshuffle.jpeg)
 
 `在executor中处理每个task后的结果均会通过buffler缓存的方式写入到多个磁盘文件中，其中文件的个数由shuffle算子的numPartition参数指定（图中partition为3）。因此Shuffle Write 阶段会产生大量的磁盘文件，整个Shuffle Write 阶段的文件总数为：` **Write阶段的task数目 * Read阶段的task数目**。 
 
@@ -70,7 +70,7 @@ HashShuffleMagnage是Spark1.2之前版本的默认模式，在集群中的每个
  	2. `考虑到executor的并行计算能力（core数量），处理任务的每个core均会生成m个文件。 
     因此，优化后的HashShuffleManage最终的总文件数：` **Write阶段的core数量  * Read阶段的task数目**。
 
-###*优化后的HashShuffleManage*
+### *优化后的HashShuffleManage*
 
 > 	下图说明了优化后的HashShuffleManager的原理。`这里说的优化，是指我们可以设置一个参数，spark.shuffle.consolidateFiles。该参数默认值为false，将其设置为true即可开启优化机制`。通常来说，如果我们使用HashShuffleManager，那么都建议开启这个选项。
 >
@@ -80,11 +80,11 @@ HashShuffleMagnage是Spark1.2之前版本的默认模式，在集群中的每个
 >
 > 　　假设第二个stage有100个task，第一个stage有50个task，总共还是有10个Executor，每个Executor执行5个task。那么原本使用未经优化的HashShuffleManager时，每个Executor会产生500个磁盘文件，所有Executor会产生5000个磁盘文件的。但是此时经过优化之后，每个Executor创建的磁盘文件的数量的计算公式为：CPU core的数量 * 下一个stage的task数量。也就是说，每个Executor此时只会创建100个磁盘文件，所有Executor只会创建1000个磁盘文件。
 >
-> ![](/Users/wsh/Desktop/note/img/hashshuffleB.jpeg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/hashshuffleB.jpeg)
 
-###SortShuffleManage 
+### SortShuffleManage 
 
-#####	`SortShuffleManager的运行机制主要分成两种，一种是普通运行机制，另一种是bypass运行机制。当shuffle read task的数量小于等于spark.shuffle.sort.bypassMergeThreshold参数的值时（默认为200），就会启用bypass机制。`
+##### `SortShuffleManager的运行机制主要分成两种，一种是普通运行机制，另一种是bypass运行机制。当shuffle read task的数量小于等于spark.shuffle.sort.bypassMergeThreshold参数的值时（默认为200），就会启用bypass机制。`
 
 ### *普通运行机制*
 
@@ -98,9 +98,9 @@ HashShuffleMagnage是Spark1.2之前版本的默认模式，在集群中的每个
 >
 > 　　SortShuffleManager由于有一个磁盘文件merge的过程，因此大大减少了文件数量。比如第一个stage有50个task，总共有10个Executor，每个Executor执行5个task，而第二个stage有100个task。由于每个task最终只有一个磁盘文件，因此此时每个Executor上只有5个磁盘文件，所有Executor只有50个磁盘文件。
 >
-> ![](/Users/wsh/Desktop/note/img/basesortshuffle.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/basesortshuffle.jpg)
 
-###*bypass运行机制*
+### *bypass运行机制*
 
 > 	下图说明了bypass SortShuffleManager的原理。bypass运行机制的触发条件如下：
 >
@@ -113,11 +113,11 @@ HashShuffleMagnage是Spark1.2之前版本的默认模式，在集群中的每个
 >
 > 　　**`而该机制与普通SortShuffleManager运行机制的不同在于：第一，磁盘写机制不同；第二，不会进行排序。也就是说，启用该机制的最大好处在于，shuffle write过程中，不需要进行数据的排序操作，也就节省掉了这部分的性能开销`**。
 >
-> ![](/Users/wsh/Desktop/note/img/bypass.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/bypass.jpg)
 
-##*sortShuffleManager补充*
+## *sortShuffleManager补充*
 
-> ![](/Users/wsh/Desktop/note/img/spark-shuffle-v3.png)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/spark-shuffle-v3.png)
 >
 > 	在map阶段(shuffle write)，会按照partition id以及key对记录进行排序，将所有partition的数据写在同一个文件中，该文件中的记录首先是按照partition id排序一个一个分区的顺序排列，每个partition内部是按照key进行排序存放，map task运行期间会顺序写每个partition的数据，并通过一个索引文件记录每个partition的大小和偏移量。这样一来，每个map task一次只开两个文件描述符，一个写数据，一个写索引，大大减轻了Hash Shuffle大量文件描述符的问题，即使一个executor有K个core，那么最多一次性开K*2个文件描述符。
 >
@@ -125,13 +125,13 @@ HashShuffleMagnage是Spark1.2之前版本的默认模式，在集群中的每个
 >
 > 	总体上看来Sort Shuffle解决了Hash Shuffle的所有弊端，但是因为需要其shuffle过程需要对记录进行排序，所以在性能上有所损失。
 
-##*Unsafe Shuffle*
+## *Unsafe Shuffle*
 
 > 		从spark 1.5.0开始，spark开始了钨丝计划(Tungsten)，目的是优化内存和CPU的使用，进一步提升spark的性能。为此，引入Unsafe Shuffle，**`它的做法是将数据记录用二进制的方式存储，直接在序列化的二进制数据上sort而不是在java对象上，这样一方面可以减少memory的使用和GC的开销，另一方面避免shuffle过程中频繁的序列化以及反序列化。在排序过程中，它提供cache-efficient sorter，使用一个8 bytes的指针，把排序转化成了一个指针数组的排序，极大的优化了排序性能`**。
 >
 > 	但是使用Unsafe Shuffle有几个限制，shuffle阶段不能有aggregate操作，分区数不能超过一定大小(224−1224−1，这是可编码的最大parition id)，所以像reduceByKey这类有aggregate操作的算子是不能使用Unsafe Shuffle，它会退化采用Sort Shuffle。
 
-##*Sort Shuffle v2*
+## *Sort Shuffle v2*
 
 ​	从spark-1.6.0开始，把Sort Shuffle和Unsafe Shuffle全部统一到Sort Shuffle中，如果检测到满足Unsafe Shuffle条件会自动采用Unsafe Shuffle，否则采用Sort Shuffle。从spark-2.0.0开始，spark把Hash Shuffle移除，可以说目前spark-2.0中只有一种Shuffle，即为Sort Shuffle。
 

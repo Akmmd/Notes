@@ -47,15 +47,15 @@
 
 该模式的运行过程是：
 
-> ![](/Users/wsh/Desktop/note/img/cluster_2.1.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/cluster_2.1.jpg)
 >
 > ------
 >
-> ![](/Users/wsh/Desktop/note/img/cluster_2.2.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/cluster_2.2.jpg)
 >
 > ------
 >
-> ![](/Users/wsh/Desktop/note/img/cluster_2.3.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/cluster_2.3.jpg)
 >
 > 1. 由client向ResourceManager提交请求，并上传jar到HDFS上
 >    这期间包括四个步骤：
@@ -100,7 +100,7 @@
 
 > job运行过程：
 >
-> ![](/Users/wsh/Desktop/note/img/client_1.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/client_1.jpg)
 >
 > 作业执行流程描述：
 >
@@ -113,7 +113,7 @@
 
 在yarn-client模式下，Driver运行在Client上，通过ApplicationMaster向RM获取资源。本地Driver负责与所有的executor container进行交互，并将最后的结果汇总。结束掉终端，相当于kill掉这个spark应用。一般来说，如果运行的结果仅仅返回到terminal上时需要配置这个。
 
-> ![](/Users/wsh/Desktop/note/img/client_2.jpg)
+> ![](https://github.com/Akmmd/Notes/raw/master/img/client_2.jpg)
 >
 > 客户端的Driver将应用提交给Yarn后，Yarn会先后启动ApplicationMaster和executor，另外ApplicationMaster和executor都 是装载在container里运行，container默认的内存是1G，ApplicationMaster分配的内存是driver- memory，executor分配的内存是executor-memory。同时，因为Driver在客户端，所以程序的运行结果可以在客户端显 示，Driver以进程名为SparkSubmit的形式存在。
 > 配置YARN-Client模式同样需要HADOOP_CONF_DIR/YARN_CONF_DIR和SPARK_JAR变量。
