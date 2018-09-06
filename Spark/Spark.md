@@ -16,4 +16,4 @@
 
 #### 广播变量：
 
-> ​	广播变量，初始的时候，就在Drvier上有一份副本。task在运行的时候，想要使用广播变量中的数据，此时首先会在自己本地的Executor对应的BlockManager中，尝试获取变量副本；如果本地没有，BlockManager，也许会从远程Driver上面去获取变量副本；也有可能从距离比较近的其它节点的Executor的BlockManager上去获取，并保存在本地的BlockManager中；BlockManager负责管理某个Executor对应的内存和磁盘上的数据，此后这个executor上的task，都会直接使用本地的BlockManager中的副本。
+> 广播变量，初始的时候，就在Drvier上有一份副本。task在运行的时候，想要使用广播变量中的数据，此时首先会在自己本地的Executor对应的BlockManager中，尝试获取变量副本；如果本地没有，BlockManager，也许会从远程Driver上面去获取变量副本；也有可能从距离比较近的其它节点的Executor的BlockManager上去获取，并保存在本地的BlockManager中；BlockManager负责管理某个Executor对应的内存和磁盘上的数据，此后这个executor上的task，都会直接使用本地的BlockManager中的副本。
