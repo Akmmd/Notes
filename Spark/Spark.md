@@ -1,4 +1,4 @@
-​	**Spark 程序必须做的第一件事情是创建一个SparkContext对象，它会告诉 Spark 如何访问集群。**
+​**Spark 程序必须做的第一件事情是创建一个SparkContext对象，它会告诉 Spark 如何访问集群。**
 
 ###*RDD：*
 
