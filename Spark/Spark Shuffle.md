@@ -1,10 +1,10 @@
 ##### &ensp;&ensp;Shuffle的中文解释为“洗牌操作”，可以理解成将集群中所有节点上的数据进行重新整合分类的过程。其思想来源于hadoop的mapReduce,Shuffle是连接map阶段和reduce阶段的桥梁。由于分布式计算中，每个阶段的各个计算节点只处理任务的一部分数据，若下一个阶段需要依赖前面阶段的所有计算结果时，则需要对前面阶段的所有计算结果进行重新整合和分类，这就需要经历shuffle过程。 
 
-##### 	与MapReduce计算框架一样，Spark的Shuffle实现大致如下图所示，在DAG阶段以shuffle为界，划分stage，上游stage做map task，每个map task将计算结果数据分成多份，每一份对应到下游stage的每个partition中，并将其临时写到磁盘，该过程叫做shuffle write；下游stage做reduce task，每个reduce task通过网络拉取上游stage中所有map task的指定分区结果数据，该过程叫做shuffle read，最后完成reduce的业务逻辑。
+##### 	&ensp;&ensp;与MapReduce计算框架一样，Spark的Shuffle实现大致如下图所示，在DAG阶段以shuffle为界，划分stage，上游stage做map task，每个map task将计算结果数据分成多份，每一份对应到下游stage的每个partition中，并将其临时写到磁盘，该过程叫做shuffle write；下游stage做reduce task，每个reduce task通过网络拉取上游stage中所有map task的指定分区结果数据，该过程叫做shuffle read，最后完成reduce的业务逻辑。
 
 > ![](/Users/wsh/Desktop/note/img/spark-shuffle-overview.png)
 
-#####		在spark中，RDD之间的关系包含窄依赖和宽依赖，其中宽依赖涉及shuffle操作。因此在spark程序的每个job中，都是根据是否有shuffle操作进行阶段（stage）划分，每个stage都是一系列的RDD map操作。
+#####		&ensp;&ensp;在spark中，RDD之间的关系包含窄依赖和宽依赖，其中宽依赖涉及shuffle操作。因此在spark程序的每个job中，都是根据是否有shuffle操作进行阶段（stage）划分，每个stage都是一系列的RDD map操作。
 
 **宽依赖（涉及Shuffle操作）：**
 
@@ -33,7 +33,7 @@
 > 		**宽依赖往往对应着shuffle操作，需要在运行的过程中将同一个RDD分区传入到不同的RDD分区中，中间可能涉及到多个节点之间数据的传输，而窄依赖的每个父RDD分区通常只会传入到另一个子RDD分区，通常在一个节点内完成；**
 >
 > 		**当RDD分区丢失时，对于窄依赖来说，由于父RDD的一个分区只对应一个子RDD分区，这样只需要重新计算与子RDD分区对应的父RDD分区就行。这个计算对数据的利用是100%的；**
->
+>	
 > 		**当RDD分区丢失时，对于宽依赖来说，重算的父RDD分区只有一部分数据是对应丢失的子RDD分区的，另一部分就造成了多余的计算。宽依赖中的子RDD分区通常来自多个父RDD分区，极端情况下，所有父RDD都有可能重新计算。**
 
 #*Spark ShuffleManager*
@@ -120,9 +120,9 @@ HashShuffleMagnage是Spark1.2之前版本的默认模式，在集群中的每个
 > ![](/Users/wsh/Desktop/note/img/spark-shuffle-v3.png)
 >
 > 	在map阶段(shuffle write)，会按照partition id以及key对记录进行排序，将所有partition的数据写在同一个文件中，该文件中的记录首先是按照partition id排序一个一个分区的顺序排列，每个partition内部是按照key进行排序存放，map task运行期间会顺序写每个partition的数据，并通过一个索引文件记录每个partition的大小和偏移量。这样一来，每个map task一次只开两个文件描述符，一个写数据，一个写索引，大大减轻了Hash Shuffle大量文件描述符的问题，即使一个executor有K个core，那么最多一次性开K*2个文件描述符。
->
+>	
 > 	在reduce阶段(shuffle read)，reduce task拉取数据做combine时不再是采用HashMap，而是采用ExternalAppendOnlyMap，该数据结构在做combine时，如果内存不足，会刷写磁盘，很大程度的保证了鲁棒性，避免大数据情况下的OOM。
->
+>	
 > 	总体上看来Sort Shuffle解决了Hash Shuffle的所有弊端，但是因为需要其shuffle过程需要对记录进行排序，所以在性能上有所损失。
 
 ##*Unsafe Shuffle*
