@@ -36,7 +36,7 @@ rdd1.reduce(...)
 
 ### 一个简单的例子
 
-```scala
+```java
 // 错误的做法。
 
 // 有一个<Long, String>格式的RDD，即rdd1。
@@ -318,4 +318,3 @@ task的执行速度是跟每个Executor进程的CPU core数量有直接关系的
   --conf spark.storage.memoryFraction=0.5 \
   --conf spark.shuffle.memoryFraction=0.3 \
 ```
-
