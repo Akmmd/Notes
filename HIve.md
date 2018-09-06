@@ -1,8 +1,8 @@
-## Hive查询中的Select
+##Hive查询中的Select
 
-#### 1. 基础查询语法
+####1. 基础查询语法
 
-	Hive中的SELECT基础语法和标准SQL语法基本一致，支持WHERE、DISTINCT、GROUP BY、ORDER BY、HAVING、LIMIT、子查询等；
+​	Hive中的SELECT基础语法和标准SQL语法基本一致，支持WHERE、DISTINCT、GROUP BY、ORDER BY、HAVING、LIMIT、子查询等；
 
 ```sql
 [WITH CommonTableExpression (, CommonTableExpression)*]  
@@ -16,19 +16,19 @@ FROM table_reference
 [LIMIT number]
 ```
 
-#### 2. Order By 和 Sort By
+####2. Order By 和 Sort By
 
-	ORDER BY用于全局排序，就是对指定的所有排序键进行全局排序，使用ORDER BY的查询语句，最后会用一个Reduce Task来完成全局排序。 SORT BY用于分区内排序，即每个Reduce任务内排序。
+​	**ORDER BY**用于==*全局排序*==，就是对指定的所有排序键进行全局排序，使用ORDER BY的查询语句，最后会用一个Reduce Task来完成全局排序。 **SORT BY**用于*==分区内排序==*，即每个Reduce任务内排序。
 
-#### 3. Distrubute By 和 Culster By
+####3. Distrubute By 和 Culster By
 
-	distribute by：按照指定的字段或表达式对数据进行划分，输出到对应的Reduce或者文件中。 
-	
-	cluster by：除了兼具distribute by的功能，还兼具sort by的排序功能。 
+​	**distribute by**：按照指定的字段或表达式对数据进行划分，输出到对应的Reduce或者文件中。 
 
-#### 4. 子查询
+​	**cluster by**：除了兼具distribute by的功能，还兼具sort by的排序功能。 
 
-	子查询和标准SQL中的子查询语法和用法基本一致，需要注意的是，Hive中如果是从一个子查询进行SELECT查询，那么子查询必须设置一个别名。
+####4. 子查询
+
+​	子查询和标准SQL中的子查询语法和用法基本一致，需要注意的是，Hive中如果是从一个子查询进行SELECT查询，那么子查询必须设置一个别名。
 
 ```sql
 SELECT col
@@ -61,11 +61,9 @@ insert overwrite table s1
 select *;
 ```
 
-## 创建表
+##创建表
 
-	创建表的语法选项特别多，这里只列出常用的选项。
-	
-	其他请参见Hive官方文档：
+​	创建表的语法选项特别多，这里只列出常用的选项。其他请参见Hive官方文档：
 
 <https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL#LanguageManualDDL-CreateTable>
 
@@ -131,12 +129,12 @@ biansutao ‘数学':80,’语文':89,’英语':95
 jobs ‘语文':60,’数学':80,’英语':99
 ```
 
-### *内部表和外部表最大的区别*
+###*内部表和外部表最大的区别*
 
 1. 内部表DROP时候==会删除==HDFS上的数据;
 2. 外部表DROP时候==不会删除==HDFS上的数据
 
-## *Left Join、Right Join 与 Inner Join*
+##*Left Join、Right Join 与 Inner Join*
 
 1. **Left Join**
 
@@ -144,7 +142,7 @@ jobs ‘语文':60,’数学':80,’英语':99
    Select * from A left join B on A.id = b.id
    ```
 
-   	*Left Join*是以A表的记录为基础的,A可以看成左表,B可以看成右表,left join是以左表为准的. 换句话说,左表(A)的记录将会全部表示出来,而右表(B)只会显示符合搜索条件的记录(例子中为: A.aID = B.bID). B表记录不足的地方均为NULL.
+   ​	*Left Join*是以A表的记录为基础的,A可以看成左表,B可以看成右表,left join是以左表为准的. 换句话说,左表(A)的记录将会全部表示出来,而右表(B)只会显示符合搜索条件的记录(例子中为: A.aID = B.bID). B表记录不足的地方均为NULL.
 
 2. **Right Join**
 
@@ -152,7 +150,7 @@ jobs ‘语文':60,’数学':80,’英语':99
    Select * from A right join B on A.id = B.id
    ```
 
-   	*Right Join*和left join的结果刚好相反,这次是以右表(B)为基础的,A表不足的地方用NULL填充.
+   * Right Join*和left join的结果刚好相反,这次是以右表(B)为基础的,A表不足的地方用NULL填充.
 
 3. **Inner Join**
 
@@ -160,7 +158,7 @@ jobs ‘语文':60,’数学':80,’英语':99
    Select * from A inner join B on A.id = B.id where A.name = 'sao'
    ```
 
-   	*Inner Join*并不以谁为基础,它只显示符合条件的记录.  还有就是inner join 可以结合where语句来使用.
+   ​	*Inner Join*并不以谁为基础,它只显示符合条件的记录.  还有就是inner join 可以结合where语句来使用.
 
 ## *优化*
 
