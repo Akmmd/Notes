@@ -15,6 +15,11 @@
 
 
 #### 广播变量：
+
+&ensp;&ensp;广播变量(groadcast varible)为只读变量，它有运行SparkContext的driver程序创建后发送给参与计算的节点。对那些需要让工作节点高效地访问相同数据的应用场景。
+
+&ensp;&ensp;广播变量也可以被非driver程序所在节点(即worker)访问，访问方法就是调用该变量的value方法
+
 &ensp;&ensp;广播变量的优势：是因为不是每个task一份变量副本，而是变成每个节点的executor才一份副本。这样的话，就可以让变量产生的副本大大减少。
 
 > 广播变量，初始的时候，就在Drvier上有一份副本。task在运行的时候，想要使用广播变量中的数据，此时首先会在自己本地的Executor对应的BlockManager中，尝试获取变量副本；如果本地没有，BlockManager，也许会从远程Driver上面去获取变量副本；也有可能从距离比较近的其它节点的Executor的BlockManager上去获取，并保存在本地的BlockManager中；BlockManager负责管理某个Executor对应的内存和磁盘上的数据，此后这个executor上的task，都会直接使用本地的BlockManager中的副本。
