@@ -5,8 +5,9 @@
 > 3. **evaluate函数需要支持重载**。
 
 ```java
-///Example
-public class Avg extends UDAF {
+import org.apache.hadoop.hive.ql.exec.UDAF;
+
+public class AvgUDF extends UDAF {
     public Integer evaluate(Integer a, Integer b) {
         if (a == null || b == null) {
             return null;
@@ -67,18 +68,25 @@ public class AvgUDAF extends UDAF {
 
     public static class AvgEvaluator implements UDAFEvaluator {
         AvgState state;
+
         public AvgEvaluator() {
             super();
             state = new AvgState();
             init();
         }
 
+        /**
+         * init函数类似于构造函数，用于UDAF的初始化
+         */
         public void init() {
             state.mcount = 0;
             state.msum = 0;
         }
 
-        public boolean iterable(double o) {
+        /**
+         * iterate接收传入的参数，并进行内部的轮转。其返回类型为boolean
+         */
+        public boolean iterate(double o) {
             if (o != 0) {
                 state.msum += o;
                 state.mcount++;
@@ -86,10 +94,18 @@ public class AvgUDAF extends UDAF {
             return true;
         }
 
+        /**
+         * terminatePartial无参数，其为iterate函数轮转结束后，返回轮转数据， 
+         * terminatePartial类似于hadoop的Combiner
+         */
         public AvgState terminatePartial() {
             return state.mcount == 0 ? state : null;
         }
 
+
+        /**
+         * merge接收terminatePartial的返回结果，进行数据merge操作，其返回类型为boolean
+         */
         public boolean merge(AvgState o) {
             if (o != null) {
                 state.mcount += o.mcount;
@@ -98,6 +114,9 @@ public class AvgUDAF extends UDAF {
             return true;
         }
 
+        /**
+         * terminate返回最终的聚集函数结果
+         */
         public Double terminate() {
             return state.mcount == 0 ? null : Double.valueOf(state.msum / state.mcount);
         }
