@@ -4,6 +4,9 @@ UDF从表中的单个行转换值，以便为每行生成单个对应的输出�
 
 自定义函数可以在Spark SQL中定义和注册为UDF，并具有可用于SQL查询的关联别名。作为一个简单的例子，我们将定义一个UDF来将以下JSON数据中的温度从摄氏度转换为华氏度：
 
+>1. 生成一个SQLContext；
+>2. 通过SQLContext.udf.register()方法注册。
+
  ```json
  {"city":"St. John's","avgHigh":8.7,"avgLow":0.6}
  {"city":"Charlottetown","avgHigh":9.7,"avgLow":0.9}
@@ -15,13 +18,17 @@ UDF从表中的单个行转换值，以便为每行生成单个对应的输出�
  ```
 
  ```scala
- val df = sqlContext.read.json("temperatures.json")
- 
- df.registerTempTable("citytemps")
- // Register the UDF with our SQLContext
- 
- sqlContext.udf.register("CTOF", (degreesCelcius: Double) => ((degreesCelcius * 9.0 / 5.0) + 32.0))
- sqlContext.sql("SELECT city, CTOF(avgLow) AS avgLowF, CTOF(avgHigh) AS avgHighF FROM citytemps").show()
+ class test {
+  def main(args: Array[String]): Unit = {
+    val conf = new SparkConf().setAppName("aa").setMaster("local[4]")
+    val sc = new SparkContext(conf)
+    val sqlContext = new SQLContext(sc)
+    val df = sqlContext.read.json("temperatures.json")
+    df.registerTempTable("citytemps")
+    sqlContext.udf.register("CTOF", (degreesCelcius: Double) => ((degreesCelcius * 9.0 / 5.0) + 32.0))
+    sqlContext.sql("SELECT city, CTOF(avgLow) AS avgLowF, CTOF(avgHigh) AS avgHighF FROM citytemps").show()
+  }
+}
  ```
 
 ```scala
