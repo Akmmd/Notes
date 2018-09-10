@@ -1,5 +1,7 @@
-UDF:
-UDAF:
+### UDF
+
+> 1. 继承UdfRegisterEntry类；
+> 2. 重写register方法。
 
 ```scala
 /**
@@ -94,12 +96,14 @@ class MyUDAF extends UserDefinedAggregateFunction {
   override def evaluate(buffer: Row): Any = buffer.getInt(0)
 }
 
-
 ```
+
+### UDAF
+> 1. 继承UserDefinedAggregateFunction抽象类；
+> 2. 实现UserDefinedAggregateFunction中定义的方法。
 
 ```scala
 //定义一个日期范围类
-
 case class DateRange(startDate: Timestamp, endDate: Timestamp) {
   def in(targetDate: Date):
   Boolean = {
@@ -112,7 +116,6 @@ case class DateRange(startDate: Timestamp, endDate: Timestamp) {
 }
 
 //定义UDAF函数,按年聚合后比较,需要实现UserDefinedAggregateFunction中定义的方法
-
 class YearOnYearCompare(current: DateRange) extends UserDefinedAggregateFunction {
   val previous: DateRange = DateRange(subtractOneYear(current.startDate), subtractOneYear(current.endDate))
 
@@ -122,7 +125,6 @@ class YearOnYearCompare(current: DateRange) extends UserDefinedAggregateFunction
   //UDAF与DataFrame列有关的输入样式,StructField的名字并没有特别要求，完全可以认为是两个内部结构的列名占位符。
 
   //至于UDAF具体要操作DataFrame的哪个列，取决于调用者，但前提是数据类型必须符合事先的设置，如这里的DoubleType与DateType类型
-
   def inputSchema: StructType = {
     StructType(StructField("metric", DoubleType) ::
       StructField("timeCategory", DateType) ::
@@ -130,7 +132,6 @@ class YearOnYearCompare(current: DateRange) extends UserDefinedAggregateFunction
   }
 
   //定义存储聚合运算时产生的中间数据结果的Schema
-
   def bufferSchema: StructType = {
     StructType(StructField("sumOfCurrent", DoubleType) ::
       StructField("sumOfPrevious", DoubleType) ::
@@ -138,22 +139,18 @@ class YearOnYearCompare(current: DateRange) extends UserDefinedAggregateFunction
   }
 
   //标明了UDAF函数的返回值类型
-
   def dataType: org.apache.spark.sql.types.DataType = DoubleType
 
   //用以标记针对给定的一组输入,UDAF是否总是生成相同的结果
-
   def deterministic: Boolean = true
 
   //对聚合运算中间结果的初始化
-
   def initialize(buffer: MutableAggregationBuffer): Unit = {
     buffer.update(0, 0.0)
     buffer.update(1, 0.0)
   }
 
   //第二个参数input: Row对应的并非DataFrame的行,而是被inputSchema投影了的行。以本例而言，每一个input就应该只有两个Field的值
-
   def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
     if (current.in(input.getAs[Date](1))) {
       buffer(0) = buffer.getAs[Double](0) + input.getAs[Double](0)
@@ -165,7 +162,6 @@ class YearOnYearCompare(current: DateRange) extends UserDefinedAggregateFunction
   }
 
   //负责合并两个聚合运算的buffer，再将其存储到MutableAggregationBuffer中
-
   def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
     buffer1(0) = buffer1.getAs[Double](0) + buffer2.getAs[Double](0)
 
@@ -173,7 +169,6 @@ class YearOnYearCompare(current: DateRange) extends UserDefinedAggregateFunction
   }
 
   //完成对聚合Buffer值的运算,得到最后的结果
-
   def evaluate(buffer: Row): Any = {
     if (buffer.getDouble(1) == 0.0) {
       0.0
@@ -188,8 +183,12 @@ class YearOnYearCompare(current: DateRange) extends UserDefinedAggregateFunction
     prev
   }
 }
+```
 
-								---Example---
+#### *Example*
+
+
+```scala
 object SimpleDemo {
   def main(args: Array[String]): Unit = {
     val dir = "D:/Program/spark/examples/src/main/resources/";
