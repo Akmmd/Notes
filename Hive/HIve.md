@@ -1,6 +1,6 @@
-##Hive查询中的Select
+## Hive查询中的Select
 
-####1. 基础查询语法
+#### 1. 基础查询语法
 
 ​	Hive中的SELECT基础语法和标准SQL语法基本一致，支持WHERE、DISTINCT、GROUP BY、ORDER BY、HAVING、LIMIT、子查询等；
 
@@ -16,17 +16,17 @@ FROM table_reference
 [LIMIT number]
 ```
 
-####2. Order By 和 Sort By
+#### 2. Order By 和 Sort By
 
 ​	**ORDER BY**用于==*全局排序*==，就是对指定的所有排序键进行全局排序，使用ORDER BY的查询语句，最后会用一个Reduce Task来完成全局排序。 **SORT BY**用于*==分区内排序==*，即每个Reduce任务内排序。
 
-####3. Distrubute By 和 Culster By
+#### 3. Distrubute By 和 Culster By
 
 ​	**distribute by**：按照指定的字段或表达式对数据进行划分，输出到对应的Reduce或者文件中。 
 
 ​	**cluster by**：除了兼具distribute by的功能，还兼具sort by的排序功能。 
 
-####4. 子查询
+#### 4. 子查询
 
 ​	子查询和标准SQL中的子查询语法和用法基本一致，需要注意的是，Hive中如果是从一个子查询进行SELECT查询，那么子查询必须设置一个别名。
 
@@ -61,7 +61,7 @@ insert overwrite table s1
 select *;
 ```
 
-##创建表
+## 创建表
 
 ​	创建表的语法选项特别多，这里只列出常用的选项。其他请参见Hive官方文档：
 
@@ -129,12 +129,12 @@ biansutao ‘数学':80,’语文':89,’英语':95
 jobs ‘语文':60,’数学':80,’英语':99
 ```
 
-###*内部表和外部表最大的区别*
+### *内部表和外部表最大的区别*
 
 1. 内部表DROP时候==会删除==HDFS上的数据;
 2. 外部表DROP时候==不会删除==HDFS上的数据
 
-##*Left Join、Right Join 与 Inner Join*
+## *Left Join、Right Join 与 Inner Join*
 
 1. **Left Join**
 
