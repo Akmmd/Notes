@@ -10,7 +10,7 @@
 
 &ensp;&ensp;MapOutputBuffe内部存数的数据采用了两个索引结构，涉及三个环形内存缓冲区。下来看一下两级索引结构：
 
-![](/Users/wsh/Documents/Notes/img/collect.jpg)
+![](https://github.com/Akmmd/Notes/raw/master/img/collect.jpg)
 
 >1. **kvoffsets缓冲区，也叫偏移量索引数组，用于保存key/value信息在位置索引kvindices中的偏移量。当kvoffsets的使用率超过io.sort.spill.percent(默认为80%)后，便会触发一次SpillThread线程的“溢写”操作，也就是开始一次Spill阶段的操作**。
 >2. **kvindices缓冲区，也叫位置索引数组，用于保存key/value在数据缓冲区kvbuffer中的起始位置**。
