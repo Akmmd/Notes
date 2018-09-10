@@ -1,7 +1,28 @@
 ### UDF
 
-> 1. 继承UdfRegisterEntry类；
-> 2. 重写register方法。
+UDF从表中的单个行转换值，以便为每行生成单个对应的输出值。例如，大多数SQL环境提供UPPER函数返回作为输入提供的字符串的大写版本。
+
+自定义函数可以在Spark SQL中定义和注册为UDF，并具有可用于SQL查询的关联别名。作为一个简单的例子，我们将定义一个UDF来将以下JSON数据中的温度从摄氏度转换为华氏度：
+
+ ```json
+ {"city":"St. John's","avgHigh":8.7,"avgLow":0.6}
+ {"city":"Charlottetown","avgHigh":9.7,"avgLow":0.9}
+ {"city":"Halifax","avgHigh":11.0,"avgLow":1.6}
+ {"city":"Fredericton","avgHigh":11.2,"avgLow":-0.5}
+ {"city":"Quebec","avgHigh":9.0,"avgLow":-1.0}
+ {"city":"Montreal","avgHigh":11.1,"avgLow":1.4}
+ ...
+ ```
+
+ ```scala
+ val df = sqlContext.read.json("temperatures.json")
+ 
+ df.registerTempTable("citytemps")
+ // Register the UDF with our SQLContext
+ 
+ sqlContext.udf.register("CTOF", (degreesCelcius: Double) => ((degreesCelcius * 9.0 / 5.0) + 32.0))
+ sqlContext.sql("SELECT city, CTOF(avgLow) AS avgLowF, CTOF(avgHigh) AS avgHighF FROM citytemps").show()
+ ```
 
 ```scala
 /**
@@ -99,6 +120,9 @@ class MyUDAF extends UserDefinedAggregateFunction {
 ```
 
 ### UDAF
+
+用户定义的聚合函数（UDAF）同时处理多行，返回单个值作为结果，通常与GROUP BY语句（例如COUNT或SUM）一起工作。
+
 > 1. 继承UserDefinedAggregateFunction抽象类；
 > 2. 实现UserDefinedAggregateFunction中定义的方法。
 
