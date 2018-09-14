@@ -351,3 +351,11 @@ scala> aa. map {
 	另外，如果仅仅是group处理，那么以下函数应该优先于 groupByKey ：
  　　（1）combineByKey 组合数据，但是组合之后的数据类型与输入时值的类型不一样。
  　　（2）foldByKey合并每一个 key 的所有值，在级联函数和“零值”中使用。
+
+
+
+
+
+#### reduceByKey
+
+> reduceyByKey() 相当于传统的 MapReduce，整个数据流也与 Hadoop 中的数据流基本一样。reduceyByKey() 默认在map 端开启 combine()，因此在 shuffle 之前先通过 mapPartitions 操作进行 combine，得到 MapPartitionsRDD，然后shuffle 得到 ShuffledRDD，然后再进行 reduce(通过 aggregate + mapPartitions() 操作来实现)得到MapPartitionsRDD。
