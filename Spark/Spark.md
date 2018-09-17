@@ -1,4 +1,4 @@
-​**Spark 程序必须做的第一件事情是创建一个SparkContext对象，它会告诉 Spark 如何访问集群。**
+##### Spark 程序必须做的第一件事情是创建一个SparkContext对象，它会告诉 Spark 如何访问集群。
 
 ### *RDD：*
 
@@ -14,7 +14,7 @@
 
 
 
-#### 广播变量：
+### 广播变量：
 
 &ensp;&ensp;广播变量(groadcast varible)为只读变量，它有运行SparkContext的driver程序创建后发送给参与计算的节点。对那些需要让工作节点高效地访问相同数据的应用场景。
 
