@@ -204,5 +204,21 @@ finalRDD.action()
       CoarseGrainedExecutorBackend(executorId) ! LaunchTask(serializedTask)
 ```
 
+1. 当⽤用户的 program 调⽤用 val sc = new SparkContext(sparkConf) 时，这个语句会帮助 program 启动诸多有关 driver 通信、job 执⾏行的对象、线程、actor等，该语句确⽴立了 program 的 driver 地位。 
 
+2. Driver program 中的 transformation() 建⽴立 computing chain(⼀一系列的 RDD)，每个 RDD 的 compute() 定义数据来了怎么计算得到该 RDD 中 partition 的结果，getDependencies() 定义 RDD 之间 partition 的数据依赖。
+
+3. 每个 action() 触发⽣生成⼀一个 job，在 dagScheduler.runJob() 的时候进⾏行 stage 划分，在 submitStage() 的时候⽣生成该stage 包含的具体的 ShuffleMapTasks 或者 ResultTasks，然后将 tasks 打包成 TaskSet 交给 taskScheduler，如果taskSet 可以运⾏行就将 tasks 交给 sparkDeploySchedulerBackend 去分配执⾏行。
+
+4. sparkDeploySchedulerBackend 接收到 taskSet 后，会通过⾃自带的 DriverActor 将 serialized tasks 发送到调度器指定的 worker node 上的 CoarseGrainedExecutorBackend Actor上。 
+
+5. Worker 端接收到 tasks 后，执⾏行如下操作 
+
+   ```scala
+   coarseGrainedExecutorBackend ! LaunchTask(serializedTask)
+    => executor.launchTask()
+    => executor.threadPool.execute(new TaskRunner(taskId, serializedTask)) 
+   ```
+
+   **executor 将 task 包装成 taskRunner，并从线程池中抽取出一个空闲线程运⾏行 task。一个 CoarseGrainedExecutorBackend 进程有且仅有一个 executor 对象。 **
 
