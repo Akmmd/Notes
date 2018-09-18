@@ -1,5 +1,7 @@
 ### Task 如何执行来生成最后的 result
 
+------
+
 整个 computing chain 根据数据依赖关系自后向前建立，遇到 ShuffleDependency 后形成 stage。在每个
 stage 中，每个 RDD 中的 compute() 调用 parentRDD.iter() 来将 parent RDDs 中的 records 一个个 fetch 过来。
 
@@ -8,6 +10,8 @@ stage 中，每个 RDD 中的 compute() 调用 parentRDD.iter() 来将 parent RD
 > 码 `firstParent[T].iterator(split,context).map(f)`。firstParent 表示该 RDD 依赖的第一个 parent RDD，iterator()表示 parentRDD 中的 records 是一个一个流入该 RDD 的，map(f) 表示每流入一个 recod 就对其进行 f(record) 操作，输出 record。为了统一接口，这段 compute() 仍然返回一个 iterator，来迭代 map(f) 输出的 records。
 
 ### Job的提交过程
+
+------
 
 以count()为例：
 
@@ -160,4 +164,45 @@ private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler: DAGScheduler
 4. 这个 taskScheduler 类型是 TaskSchedulerImpl，在 submitTasks() 里面，每一个 taskSet 被包装成 manager: TaskSetMananger，然后交给`schedulableBuilder.addTaskSetManager(manager)`。schedulableBuilder 可以是 FIFOSchedulableBuilder 或者 FairSchedulableBuilder 调度器。submitTasks() 最后一步是通知`backend.reviveOffers()`去执行 task，backend 的类型是 SchedulerBackend。如果在集群上运行，那么这个 backend 类型是 SparkDeploySchedulerBackend。
 5. SparkDeploySchedulerBackend 是 CoarseGrainedSchedulerBackend 的子类，`backend.reviveOffers()`其实是向 DriverActor 发送 ReviveOffers 信息。SparkDeploySchedulerBackend 在 start() 的时候，会启动 DriverActor。DriverActor 收到 ReviveOffers 消息后，会调用`launchTasks(scheduler.resourceOffers(Seq(new WorkerOffer(executorId, executorHost(executorId), freeCores(executorId)))))` 来 launch tasks。scheduler 就是 TaskSchedulerImpl。`scheduler.resourceOffers()`从 FIFO 或者 Fair 调度器那里获得排序后的 TaskSetManager，并经过`TaskSchedulerImpl.resourceOffer()`，考虑 locality 等因素来确定 task 的全部信息 TaskDescription。调度细节这里暂不讨论。
 6. DriverActor 中的 launchTasks() 将每个 task 序列化，如果序列化大小不超过 Akka 的 akkaFrameSize，那么直接将 task 送到 executor 那里执行`executorActor(task.executorId) ! LaunchTask(new SerializableBuffer(serializedTask))`。
+
+
+
+### Job提交
+
+------
+
+#### Driver 端的逻辑如果⽤用代码表⽰:
+
+```scala
+finalRDD.action()
+=> sc.runJob()
+
+// generate job, stages and tasks
+=> dagScheduler.runJob()	//SparkContext%runJob
+=> dagScheduler.submitJob()	//SparkContext%submitJob
+//DAGScheduler
+=> runJob.submitJob -> eventProcessLoop
+=> DAGSchedulerEventProcessLoop.JobSubmitted()
+=> dagScheduler.handleJobSubmitted()	//handleJobSubmitted
+=> finalStage = createResultStage(finalRDD, func, partitions, jobId, callSite)
+=> getOrCreateParentStages(rdd, jobId) -> createShuffleMapStage(shuffleDep, firstJobId)
+=> mapOutputTracker.registerShuffle(shuffleDep.shuffleId, rdd.partitions.length)
+=> dagScheduler.submitStage()	//handleJobSubmitted
+=>   missingStages = dagScheduler.getMissingParentStages()	//submitStage
+=> dagScheduler.subMissingTasks(readyStage)	//submitStage
+
+// add tasks to the taskScheduler
+=> taskScheduler.submitTasks(new TaskSet(tasks))
+=> fifoSchedulableBuilder.addTaskSetManager(taskSet)
+
+// send tasks
+=> sparkDeploySchedulerBackend.reviveOffers()
+=> driverActor ! ReviveOffers
+=> sparkDeploySchedulerBackend.makeOffers()
+=> sparkDeploySchedulerBackend.launchTasks()
+=> foreach task
+      CoarseGrainedExecutorBackend(executorId) ! LaunchTask(serializedTask)
+```
+
+
 
