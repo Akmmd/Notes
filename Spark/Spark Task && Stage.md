@@ -1,6 +1,4 @@
-### Task 如何执行来生成最后的 result
-
-------
+## Task 如何执行来生成最后的 result
 
 整个 computing chain 根据数据依赖关系自后向前建立，遇到 ShuffleDependency 后形成 stage。在每个
 stage 中，每个 RDD 中的 compute() 调用 parentRDD.iter() 来将 parent RDDs 中的 records 一个个 fetch 过来。
@@ -9,9 +7,7 @@ stage 中，每个 RDD 中的 compute() 调用 parentRDD.iter() 来将 parent RD
 > 或者 data block 流入的 records，进行计算，然后输出 record。经常可以在 RDD 中看到这样的代
 > 码 `firstParent[T].iterator(split,context).map(f)`。firstParent 表示该 RDD 依赖的第一个 parent RDD，iterator()表示 parentRDD 中的 records 是一个一个流入该 RDD 的，map(f) 表示每流入一个 recod 就对其进行 f(record) 操作，输出 record。为了统一接口，这段 compute() 仍然返回一个 iterator，来迭代 map(f) 输出的 records。
 
-### Job的提交过程
-
-------
+## Job的提交过程
 
 以count()为例：
 
@@ -165,11 +161,7 @@ private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler: DAGScheduler
 5. SparkDeploySchedulerBackend 是 CoarseGrainedSchedulerBackend 的子类，`backend.reviveOffers()`其实是向 DriverActor 发送 ReviveOffers 信息。SparkDeploySchedulerBackend 在 start() 的时候，会启动 DriverActor。DriverActor 收到 ReviveOffers 消息后，会调用`launchTasks(scheduler.resourceOffers(Seq(new WorkerOffer(executorId, executorHost(executorId), freeCores(executorId)))))` 来 launch tasks。scheduler 就是 TaskSchedulerImpl。`scheduler.resourceOffers()`从 FIFO 或者 Fair 调度器那里获得排序后的 TaskSetManager，并经过`TaskSchedulerImpl.resourceOffer()`，考虑 locality 等因素来确定 task 的全部信息 TaskDescription。调度细节这里暂不讨论。
 6. DriverActor 中的 launchTasks() 将每个 task 序列化，如果序列化大小不超过 Akka 的 akkaFrameSize，那么直接将 task 送到 executor 那里执行`executorActor(task.executorId) ! LaunchTask(new SerializableBuffer(serializedTask))`。
 
-
-
-### Job提交
-
-------
+## Job提交
 
 #### Driver 端的逻辑如果⽤用代码表⽰:
 
@@ -222,11 +214,7 @@ finalRDD.action()
 
    **executor 将 task 包装成 taskRunner，并从线程池中抽取出一个空闲线程运⾏行 task。一个 CoarseGrainedExecutorBackend 进程有且仅有一个 executor 对象。 **
 
-
-
-### Task运行
-
-------
+## Task运行
 
 Executor 收到 serialized 的 task 后，先 deserialize 出正常的 task，然后运行 task 得到其执行结果 directResult，这个结果要送回到 driver 那里。但是通过 Actor 发送的数据包不宜过大，**如果 result 比较大（比如 groupByKey 的 result）先把 result 存放到本地的“内存＋磁盘”上，由 blockManager 来管理，只把存储位置信息（indirectResult）发送给 driver**，driver 需要实际的 result 的时候，会通过 HTTP 去 fetch。如果 result 不大（小于`spark.akka.frameSize = 10MB`），那么直接发送给 driver。
 
@@ -291,11 +279,7 @@ After driver receives StatusUpdate(result)
 => submitStage(stage)
 ```
 
-
-
-### Shuffle Read
-
-------
+## Shuffle Read
 
 ### *reducer 怎么知道要去哪里 fetch 数据？*
 
@@ -376,11 +360,7 @@ BasicBlockFetcherIterator.next()
 => result.deserialize()
 ```
 
-
-
-### Cache
-
-------
+## Cache
 
 作为区别于 Hadoop 的⼀一个重要 feature，cache 机制保证了需要访问重复数据的应⽤用(如迭代型算法和交互式应⽤用)可以运⾏行的更快。与 Hadoop MapReduce job 不同的是 Spark 的逻辑/物理执⾏行图可能很庞⼤大，task 中 computing chain 可能会很⻓长，计算某些 RDD 也可能会很耗时。这时，如果 task 中途运⾏行出错，那么 task 的整个 computing chain 需要重算，代价太⾼高。因此，有必要将计算代价较⼤大的 RDD checkpoint ⼀一下，这样，当下游 RDD 计算出错时，可以直接从checkpoint 过的 RDD 那⾥里读取数据继续算。
 
@@ -413,3 +393,87 @@ blockManager 将 elements（也就是 partition） 存放到 memoryStore 管理�
 
 ### *cacheRDD怎么被读取？*
 
+下次计算(⼀一般是同⼀一 application 的下⼀一个 job 计算)时如果⽤用到 cached RDD，task 会直接去 blockManager 的memoryStore 中读取。具体地讲，当要计算某个 rdd 中的 partition 时候(通过调⽤用 rdd.iterator())会先去 blockManager⾥里⾯面查找是否已经被 cache 了，如果 partition 被 cache 在本地，就直接使⽤用 `blockManager.getLocal()` 去本地memoryStore ⾥里读取。如果该 partition 被其他节点上 blockManager cache 了，会通过 `blockManager.getRemote()` 去其他节点上读取。
+
+**获取 cached partitions 的存储位置：**partition 被 cache 后所在节点上的 blockManager 会通知 driver 上的 blockMangerMasterActor 说某 rdd 的 partition 已经被我 cache 了，这个信息会存储在 blockMangerMasterActor 的 blockLocations: HashMap中。等到 task 执行需要 cached rdd 的时候，会调用 blockManagerMaster 的 getLocations(blockId) 去询问某 partition 的存储位置，这个询问信息会发到 driver 那里，driver 查询 blockLocations 获得位置信息并将信息送回。
+
+**读取其他节点上的 cached partition：**task 得到 cached partition 的位置信息后，将 GetBlock(blockId) 的请求通过 connectionManager 发送到目标节点。目标节点收到请求后从本地 blockManager 那里的 memoryStore 读取 cached partition，最后发送回来。
+
+## CheckPoint
+
+#### *哪些 RDD 需要 checkpoint？*
+
+运算时间很长或运算量太大才能得到的 RDD，computing chain 过长或依赖其他 RDD 很多的 RDD。
+
+实际上，将 ShuffleMapTask 的输出结果存放到本地磁盘也算是 checkpoint，只不过这个 checkpoint 的主要目的是去 partition 输出数据。
+
+#### *什么时候 checkpoint？*
+
+cache 机制是每计算出一个要 cache 的 partition 就直接将其 cache 到内存了。但 checkpoint 没有使用这种第一次计算得到就存储的方法，而是等到 job 结束后另外启动专门的 job 去完成 checkpoint 。**也就是说需要 checkpoint 的 RDD 会被计算两次。因此，在使用 rdd.checkpoint() 的时候，建议加上 rdd.cache()，**这样第二次运行的 job 就不用再去计算该 rdd 了，直接读取 cache 写磁盘。其实 Spark 提供了 rdd.persist(StorageLevel.DISK_ONLY) 这样的方法，相当于 cache 到磁盘上，这样可以做到 rdd 第一次被计算得到时就存储到磁盘上，但这个 persist 和 checkpoint 有很多不同，之后会讨论。
+
+#### *checkpoint 怎么实现？*
+
+RDD 需要经过 [ Initialized --> marked for checkpointing --> checkpointing in progress --> checkpointed ] 这几个阶段才能被 checkpoint。
+
+**Initialized：** 首先 driver program 需要使用 rdd.checkpoint() 去设定哪些 rdd 需要 checkpoint，设定后，该 rdd 就接受 RDDCheckpointData 管理。用户还要设定 checkpoint 的存储路径，一般在 HDFS 上。
+
+**marked for checkpointing：** 初始化后，RDDCheckpointData 会将 rdd 标记为 MarkedForCheckpoint。
+
+**checkpointing in progress：** 每个 job 运行结束后会调用 finalRdd.doCheckpoint()，finalRdd 会顺着 computing chain 回溯扫描，碰到要 checkpoint 的 RDD 就将其标记为 CheckpointingInProgress，然后将写磁盘（比如写 HDFS）需要的配置文件（如 core-site.xml 等）broadcast 到其他 worker 节点上的 blockManager。完成以后，启动一个 job 来完成 checkpoint（使用 `rdd.context.runJob(rdd, CheckpointRDD.writeToFile(path.toString, broadcastedConf))`）。
+
+**checkpointed：**job 完成 checkpoint 后，将该 rdd 的 dependency 全部清掉，并设定该 rdd 状态为 checkpointed。然后，**为该 rdd 强加一个依赖，设置该 rdd 的 parent rdd 为 CheckpointRDD**，该 CheckpointRDD 负责以后读取在文件系统上的 checkpoint 文件，生成该 rdd 的 partition。
+
+有意思的是我在 driver program 里 checkpoint 了两个 rdd，结果只有一个（下面的 result）被 checkpoint 成功，pairs2 没有被 checkpoint，也不知道是 bug 还是故意只 checkpoint 下游的 RDD：
+
+```scala
+val data1 = Array[(Int, Char)]((1, 'a'), (2, 'b'), (3, 'c'), 
+    (4, 'd'), (5, 'e'), (3, 'f'), (2, 'g'), (1, 'h'))
+val pairs1 = sc.parallelize(data1, 3)
+val data2 = Array(Int, Char)
+val pairs2 = sc.parallelize(data2, 2)
+pairs2.checkpoint
+val result = pairs1.join(pairs2)
+result.checkpoint
+```
+
+#### *怎么读取 checkpoint 过的 RDD？*
+
+在 runJob() 的时候会先调用 finalRDD 的 partitions() 来确定最后会有多个 task。rdd.partitions() 会去检查（通过 RDDCheckpointData 去检查，因为它负责管理被 checkpoint 过的 rdd）该 rdd 是会否被 checkpoint 过了，如果该 rdd 已经被 checkpoint 过了，直接返回该 rdd 的 partitions 也就是 Array[Partition]。
+
+当调用 rdd.iterator() 去计算该 rdd 的 partition 的时候，会调用 computeOrReadCheckpoint(split: Partition) 去查看该 rdd 是否被 checkpoint 过了，如果是，就调用该 rdd 的 parent rdd 的 iterator() 也就是 CheckpointRDD.iterator()，CheckpointRDD 负责读取文件系统上的文件，生成该 rdd 的 partition。**这就解释了为什么那么 trickly 地为 checkpointed rdd 添加一个 parent CheckpointRDD。**
+
+#### *cache 与 checkpoint 的区别？*
+
+关于这个问题，Tathagata Das 有一段回答: There is a significant difference between cache and checkpoint. Cache materializes the RDD and keeps it in memory and/or disk（其实只有 memory）. But the lineage（也就是 computing chain） of RDD (that is, seq of operations that generated the RDD) will be remembered, so that if there are node failures and parts of the cached RDDs are lost, they can be regenerated. However, **checkpoint saves the RDD to an HDFS file and actually forgets the lineage completely.** This is allows long lineages to be truncated and the data to be saved reliably in HDFS (which is naturally fault tolerant by replication).
+
+深入一点讨论，rdd.persist(StorageLevel.DISK_ONLY) 与 checkpoint 也有区别。前者虽然可以将 RDD 的 partition 持久化到磁盘，但该 partition 由 blockManager 管理。一旦 driver program 执行结束，也就是 executor 所在进程 CoarseGrainedExecutorBackend stop，blockManager 也会 stop，被 cache 到磁盘上的 RDD 也会被清空（整个 blockManager 使用的 local 文件夹被删除）。而 checkpoint 将 RDD 持久化到 HDFS 或本地文件夹，如果不被手动 remove 掉（**话说怎么 remove checkpoint 过的 RDD？**），是一直存在的，也就是说可以被下一个 driver program 使用，而 cached RDD 不能被其他 dirver program 使用。
+
+## Discussion
+
+Hadoop MapReduce 在执行 job 的时候，不停地做持久化，每个 task 运行结束做一次，每个 job 运行结束做一次（写到 HDFS）。在 task 运行过程中也不停地在内存和磁盘间 swap 来 swap 去。 可是讽刺的是，Hadoop 中的 task 太傻，中途出错需要完全重新运行，比如 shuffle 了一半的数据存放到了磁盘，下次重新运行时仍然要重新 shuffle。Spark 好的一点在于尽量不去持久化，所以使用 pipeline，cache 等机制。用户如果感觉 job 可能会出错可以手动去 checkpoint 一些 critical 的 RDD，job 如果出错，下次运行时直接从 checkpoint 中读取数据。唯一不足的是，checkpoint 需要两次运行 job。
+
+### *Example For CheckPoint*
+
+```scala
+    import org.apache.spark.SparkContext
+    import org.apache.spark.SparkContext._
+    import org.apache.spark.SparkConf
+    object groupByKeyTest {
+      def main(args: Array[String]) {
+        val conf = new SparkConf().setAppName("GroupByKey").setMaster("local")
+        val sc = new SparkContext(conf)
+        sc.setCheckpointDir("/Users/xulijie/Documents/data/checkpoint")
+        val data = Array[(Int, Char)]((1, 'a'), (2, 'b'),
+          (3, 'c'), (4, 'd'),
+          (5, 'e'), (3, 'f'),
+          (2, 'g'), (1, 'h')
+        )
+        val pairs = sc.parallelize(data, 3)
+        pairs.checkpoint
+        pairs.count
+        val result = pairs.groupByKey(2)
+        result.foreachWith(i => i)((x, i) => println("[PartitionIndex " + i + "] " + x))
+        println(result.toDebugString)
+      }
+    }
+```
