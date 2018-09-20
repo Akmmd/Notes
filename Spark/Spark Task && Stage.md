@@ -297,7 +297,7 @@ After driver receives StatusUpdate(result)
 
 ------
 
-#### *问题：reducer 怎么知道要去哪里 fetch 数据？*
+### *reducer 怎么知道要去哪里 fetch 数据？*
 
 reducer 首先要知道 parent stage 中 ShuffleMapTask 输出的 FileSegments 在哪个节点。**这个信息在 ShuffleMapTask 完成时已经送到了 driver 的 mapOutputTrackerMaster，并存放到了 mapStatuses: HashMap<stageId, Array[MapStatus]> 里面**，给定 stageId，可以获取该  stage 中 ShuffleMapTasks 生成的 FileSegments 信息 Array[MapStatus]，通过 Array(taskId) 就可以得到某个 task 输出的 FileSegments 位置（blockManagerId）及每个 FileSegment 大小。
 
@@ -339,9 +339,7 @@ In basicBlockFetcherIterator:
 => fetchResults.put(new FetchResult(id, 0, () => iter))
 ```
 
-
-
-#### *reducer 如何将 fetchRequest 信息发送到目标节点？目标节点如何处理 fetchRequest 信息，如何读取 FileSegment 并回送给 reducer？*
+### *reducer 如何将 fetchRequest 信息发送到目标节点？目标节点如何处理 fetchRequest 信息，如何读取 FileSegment 并回送给 reducer？*
 
 rdd.iterator() 碰到 ShuffleDependency 时会调用 BasicBlockFetcherIterator 去获取 FileSegments。BasicBlockFetcherIterator 使用 blockManager 中的 connectionManager 将 fetchRequest 发送给其他节点的 connectionManager。connectionManager 之间使用 NIO 模式通信。其他节点，比如 worker node 2 上的 connectionManager 收到消息后，会交给 blockManagerWorker 处理，blockManagerWorker 使用 blockManager 中的 diskStore 去本地磁盘上读取 fetchRequest 要求的 FileSegments，然后仍然通过 connectionManager 将 FileSegments 发送回去。如果使用了 FileConsolidation，diskStore 还需要 shuffleBlockManager 来提供 blockId 所在的具体位置。如果 FileSegment 不超过 `spark.storage.memoryMapThreshold=8KB` ，那么 diskStore 在读取 FileSegment 的时候会直接将 FileSegment 放到内存中，否则，会使用 RandomAccessFile 中 FileChannel 的内存映射方法来读取 FileSegment（这样可以将大的 FileSegment 加载到内存）。
 
@@ -377,4 +375,41 @@ BasicBlockFetcherIterator.next()
       }
 => result.deserialize()
 ```
+
+
+
+### Cache
+
+------
+
+作为区别于 Hadoop 的⼀一个重要 feature，cache 机制保证了需要访问重复数据的应⽤用(如迭代型算法和交互式应⽤用)可以运⾏行的更快。与 Hadoop MapReduce job 不同的是 Spark 的逻辑/物理执⾏行图可能很庞⼤大，task 中 computing chain 可能会很⻓长，计算某些 RDD 也可能会很耗时。这时，如果 task 中途运⾏行出错，那么 task 的整个 computing chain 需要重算，代价太⾼高。因此，有必要将计算代价较⼤大的 RDD checkpoint ⼀一下，这样，当下游 RDD 计算出错时，可以直接从checkpoint 过的 RDD 那⾥里读取数据继续算。
+
+### *driver program 设定 rdd.cache() 后，系统怎么对 RDD 进⾏行 cache?*
+
+先不看实现，⾃自⼰己来想象⼀一下如何完成 cache:当 task 计算得到 RDD 的某个 partition 的第⼀一个 record 后，就去判断该 RDD 是否要被 cache，如果要被 cache 的话，将这个 record 及后续计算的到的 records 直接丢给本地 blockManager 的 memoryStore，如果 memoryStore 存不下就交给 diskStore 存放到磁盘。 
+
+实际实现与设想的基本类似，区别在于:将要计算 RDD partition 的时候(⽽而不是已经计算得到第⼀一个 record 的时候)就 去判断 partition 要不要被 cache。如果要被 cache 的话，先将 partition 计算出来，然后 cache 到内存。cache 只使⽤用 memory，写磁盘的话那就叫 checkpoint 了。 
+
+调⽤用 rdd.cache() 后， rdd 就变成 persistRDD 了，其 StorageLevel 为 MEMORY_ONLY。persistRDD 会告知 driver 说⾃自 ⼰己是需要被 persist 的。 
+
+如果用代码表示：
+
+```scala
+rdd.iterator()
+=> SparkEnv.get.cacheManager.getOrCompute(thisRDD, split, context, storageLevel)
+=> key = RDDBlockId(rdd.id, split.index)
+=> blockManager.get(key)
+=> computedValues = rdd.computeOrReadCheckpoint(split, context)
+      if (isCheckpointed) firstParent[T].iterator(split, context) 
+      else compute(split, context)
+=> elements = new ArrayBuffer[Any]
+=> elements ++= computedValues
+=> updatedBlocks = blockManager.put(key, elements, tellMaster = true) 
+```
+
+当 rdd.iterator() 被调用的时候，也就是要计算该 rdd 中某个 partition 的时候，会先去 cacheManager 那里领取一个 blockId，表明是要存哪个 RDD 的哪个 partition，这个 blockId 类型是 RDDBlockId（memoryStore 里面可能还存放有 task 的 result 等数据，因此 blockId 的类型是用来区分不同的数据）。然后去 blockManager 里面查看该 partition 是不是已经被 checkpoint 了，如果是，表明以前运行过该 task，那就不用计算该 partition 了，直接从 checkpoint 中读取该 partition 的所有 records 放到叫做 elements 的 ArrayBuffer 里面。如果没有被 checkpoint 过，先将 partition 计算出来，然后将其所有 records 放到 elements 里面。最后将 elements 交给 blockManager 进行 cache。
+
+blockManager 将 elements（也就是 partition） 存放到 memoryStore 管理的 LinkedHashMap[BlockId, Entry] 里面。如果 partition 大于 memoryStore 的存储极限（默认是 60% 的 heap），那么直接返回说存不下。如果剩余空间也许能放下，会先 drop 掉一些早先被 cached 的 RDD 的 partition，为新来的 partition 腾地方，如果腾出的地方够，就把新来的 partition 放到 LinkedHashMap 里面，腾不出就返回说存不下。注意 drop 的时候不会去 drop 与新来的 partition 同属于一个 RDD 的 partition。drop 的时候先 drop 最早被 cache 的 partition。（说好的 LRU 替换算法呢？）
+
+### *cacheRDD怎么被读取？*
 
