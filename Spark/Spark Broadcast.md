@@ -45,7 +45,7 @@ HttpBroadcast 是通过传统的 http 协议和 httpServer 去传 data，在 Tor
 
 下面讨论 TorrentBroadcast 的一些细节：
 
-![TorrentBroadcast](/Users/wsh/Documents/Notes/img/TorrentBroadcast.png)
+![TorrentBroadcast](https://github.com/Akmmd/Notes/blob/master/img/TorrentBroadcast.png)
 
 #### driver 端：
 
